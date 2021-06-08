@@ -40,7 +40,12 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-//post requests
+app.get("/u/:shortURL", (req,res)=>{
+  const longURL = urlDatabase[req.params.shortURL]
+  res.redirect(longURL);
+})
+
+//add a new url
 app.post("/urls", (req, res) => {
   let newShortURL = generateRandomString()
   let newLongURL = req.body.longURL;
@@ -48,15 +53,20 @@ app.post("/urls", (req, res) => {
   res.redirect("/urls/"+newShortURL);
 });
 
+//delete an existing url
 app.post("/urls/:shortURL/delete", (req,res)=>{
   delete urlDatabase[req.params.shortURL];
   res.redirect("/urls");
 })
 
-app.get("/u/:shortURL", (req,res)=>{
-  const longURL = urlDatabase[req.params.shortURL]
-  res.redirect(longURL);
+//modify an existing url
+app.post("/urls/:shortURL/update", (req,res)=>{
+  let newLongURL = req.body.newLongURL;
+  urlDatabase[req.params.shortURL] = newLongURL;
+  res.redirect("/urls");
 })
+
+
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}`);
