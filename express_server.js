@@ -60,6 +60,13 @@ app.post("/login", (req, res) => {
   res.redirect("/urls");
 });
 
+//logout of app
+app.post("/logout", (req, res) => {
+  username = "";
+  res.cookie("username", username);
+  res.redirect("/urls");
+});
+
 //add a new url
 app.post("/urls", (req, res) => {
   let newShortURL = generateRandomString();
