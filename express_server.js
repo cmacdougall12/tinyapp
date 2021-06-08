@@ -25,7 +25,7 @@ const generateRandomString = function () {
 //set the view engine to ejs
 app.set("view engine", "ejs");
 
-//middlewear
+//middlewear used
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
