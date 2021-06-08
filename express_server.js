@@ -1,3 +1,4 @@
+//import dependancies 
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
@@ -5,15 +6,16 @@ const cookieParser = require("cookie-parser");
 const { json } = require("body-parser");
 const PORT = 8080;
 
+//delcare urlDatabase as a global variable so entire application can access values
 const urlDatabase = {
   b2xVn2: "http://www.lighthouselabs.ca",
   "9sm5xK": "http://www.google.com",
 };
 
-//set username to global variable so it is available for all required views
+//set username to global variable so it is available throughout application
 let = username = "";
 
-//generate random alphanumeric string of length 6.
+//generate random alphanumeric string of length 6. This is used when creating a new shortURL
 const generateRandomString = function () {
   let result = "";
   result = Math.random().toString(36).substr(2, 6);
@@ -34,11 +36,13 @@ app.get("/urls", (req, res) => {
   console.log(templateVars.username)
 });
 
+//get new url page
 app.get("/urls/new", (req, res) => {
   const templateVars = {username: username };
-  res.render("urls_new");
+  res.render("urls_new", templateVars);
 });
 
+//get shortURL application page
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
@@ -48,6 +52,7 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+//get shortURL link 
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
