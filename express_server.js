@@ -22,6 +22,7 @@ app.set("view engine", "ejs");
 //middlewear
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// get requests
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
   res.render("urls_index", templateVars);
@@ -39,12 +40,18 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+//post requests
 app.post("/urls", (req, res) => {
   let newShortURL = generateRandomString()
   let newLongURL = req.body.longURL;
   urlDatabase[newShortURL] = newLongURL; 
   res.redirect("/urls/"+newShortURL);
 });
+
+app.post("/urls/:shortURL/delete", (req,res)=>{
+  delete urlDatabase[req.params.shortURL];
+  res.redirect("/urls");
+})
 
 app.get("/u/:shortURL", (req,res)=>{
   const longURL = urlDatabase[req.params.shortURL]
