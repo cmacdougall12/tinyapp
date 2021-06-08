@@ -33,7 +33,6 @@ app.use(cookieParser());
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase, username: username };
   res.render("urls_index", templateVars);
-  console.log(templateVars.username)
 });
 
 //get new url page
