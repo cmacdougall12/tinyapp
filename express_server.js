@@ -12,6 +12,19 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com",
 };
 
+const users = { 
+  "userRandomID": {
+    id: "userRandomID", 
+    email: "user@example.com", 
+    password: "purple-monkey-dinosaur"
+  },
+ "user2RandomID": {
+    id: "user2RandomID", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
+
 //set username to global variable so it is available throughout application
 let = username = "";
 
@@ -41,6 +54,11 @@ app.get("/urls/new", (req, res) => {
   const templateVars = {username: username };
   res.render("urls_new", templateVars);
 });
+
+//get register page
+app.get("/register", (req,res)=>{
+  res.render("urls_register")
+})
 
 //get shortURL application page
 app.get("/urls/:shortURL", (req, res) => {
