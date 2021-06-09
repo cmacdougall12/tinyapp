@@ -31,10 +31,10 @@
           </tr>
         </thead>
         <tbody>
-          <% for(let url in urls) { %>
+          <% if (user){%> <% for(let url in urls) { %>
           <tr>
             <td><%= url %></td>
-            <td><%= urls[url].longURL %></td>
+            <td><%= urls[url] %></td>
             <td>
               <form method="GET" action="/urls/<%= url %>">
                 <button type="edit" class="btn btn-primary">Edit</button>
@@ -46,9 +46,12 @@
               </form>
             </td>
           </tr>
-          <% } %>
+          <% } %> <%}%>
         </tbody>
       </table>
+      <% if (!user){%>
+        <h3>Please login to view your links!!</h3>
+      <%}%>
     </main>
     <!-- Bootstrap JS -->
     <script

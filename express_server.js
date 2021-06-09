@@ -52,13 +52,29 @@ const checkUserEmail = function (email, userObject) {
   return false;
 };
 
+//returns URLs that belongs to the user logged in
+const urlsForUser = function (id) {
+  const userURLS = {};
+  for (let urls in urlDatabase) {
+    if (urlDatabase[urls]["userID"] === id) {
+      userURLS[urls] = urlDatabase[urls]["longURL"];
+    }
+  }
+  return userURLS;
+};
+
+
 //GET REQUESTS**********************************************************************
 // get urls page
 app.get("/urls", (req, res) => {
   const templateVars = {
-    urls: urlDatabase,
     user: req.cookies["user_id"],
   };
+
+  if (req.cookies["user_id"]) {
+    templateVars["urls"] = urlsForUser(req.cookies["user_id"].id);
+  }
+
   res.render("urls_index", templateVars);
 });
 
@@ -67,7 +83,7 @@ app.get("/urls/new", (req, res) => {
   if (!req.cookies["user_id"]) {
     return res.redirect("/login");
   }
-  const templateVars = { user: users[req.cookies["user_id"]] };
+  const templateVars = { user: req.cookies["user_id"] };
   res.render("urls_new", templateVars);
 });
 
@@ -75,7 +91,7 @@ app.get("/urls/new", (req, res) => {
 app.get("/register", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
+    user: req.cookies["user_id"],
   };
   res.render("urls_register", templateVars);
 });
@@ -94,15 +110,9 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    user: users[req.cookies["user_id"]],
+    user: req.cookies["user_id"],
   };
   res.render("urls_show", templateVars);
-});
-
-//get shortURL link
-app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL].longURL;
-  res.redirect(longURL);
 });
 
 //POST REQUESTS*********************************************************************
@@ -172,15 +182,35 @@ app.post("/urls", (req, res) => {
 
 //delete an existing url
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect("/urls");
+  //users not logged in can not delete links
+  if (!req.cookies["user_id"]) {
+    return res
+      .status(403)
+      .send("Can not delete links, without logging into account");
+  }
+  //user deleting link needs to be the one who made the link
+  let userID = req.cookies["user_id"];
+  if (userID["id"] === urlDatabase[req.params.shortURL]["userID"]) {
+    delete urlDatabase[req.params.shortURL];
+    return res.redirect("/urls");
+  }
 });
 
 //modify an existing url
 app.post("/urls/:shortURL/update", (req, res) => {
+  //users not logged in can not modify links
+  if (!req.cookies["user_id"]) {
+    return res
+      .status(403)
+      .send("Can not modify messages, without logging into account");
+  }
+   //user modifying link needs to be the one who made the link
   let newLongURL = req.body.newLongURL;
-  urlDatabase[req.params.shortURL] = newLongURL;
-  res.redirect("/urls");
+  let userID = req.cookies["user_id"];
+  if (userID["id"] === urlDatabase[req.params.shortURL]["userID"]) {
+    urlDatabase[req.params.shortURL]["longURL"] = newLongURL;
+    return res.redirect("/urls");
+  }
 });
 
 app.listen(PORT, () => {
