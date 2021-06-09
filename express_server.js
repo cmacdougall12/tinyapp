@@ -24,12 +24,12 @@ const users = {
   userRandomID: {
     id: "userRandomID",
     email: "user@example.com",
-    password: "purple-monkey-dinosaur",
+    password: "123",
   },
   user2RandomID: {
     id: "user2RandomID",
     email: "user2@example.com",
-    password: "dishwasher-funk",
+    password: "123",
   },
 };
 
@@ -55,7 +55,6 @@ const checkUserEmail = function (email, userObject) {
 //GET REQUESTS**********************************************************************
 // get urls page
 app.get("/urls", (req, res) => {
- 
   const templateVars = {
     urls: urlDatabase,
     user: req.cookies["user_id"],
@@ -107,12 +106,14 @@ app.get("/u/:shortURL", (req, res) => {
 //register new user
 app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {
-    res.status(400).send("Please fill out all required fields");
-  } else if (checkUserEmail(req.body.email, users) !== false) {
-    res
+    return res.status(400).send("Please fill out all required fields");
+  } 
+  if (checkUserEmail(req.body.email, users) !== false) {
+    return res
       .status(400)
       .send("Email already registered, please login or use a different email");
-  } else if (res.statusCode !== 400) {
+  } 
+  if (res.statusCode !== 400) {
     const userId = generateRandomString();
     users[userId] = {
       id: userId,
@@ -129,26 +130,32 @@ app.post("/login", (req, res) => {
   const currentUser = checkUserEmail(req.body.email, users);
   //blank fields
   if (req.body.email === "" || req.body.password === "") {
-    res.status(400).send("Please fill out all required fields");
+    return res.status(400).send("Please fill out all required fields");
   }
   //check user object for email given and see if passwords match
-  else if (currentUser === false) {
-    res
+  if (currentUser === false) {
+    return res
       .status(403)
       .send("User does not exist with email given, please create an account");
-  } else if (
+  }
+  if (
     currentUser !== false &&
     users[currentUser].password === req.body.password
   ) {
-    res.cookie("user_id", users[currentUser]).redirect("/urls");
-  } else {
+    return res.cookie("user_id", users[currentUser]).redirect("/urls");
+  }
+  if (
+    currentUser !== false &&
+    users[currentUser].password !== req.body.password
+  ) {
     res.status(403).send("Incorrect password please try again");
   }
+  
 });
 
 //logout of app
 app.post("/logout", (req, res) => {
-  res.cookie("user_id", "");
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
