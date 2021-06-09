@@ -62,8 +62,11 @@ app.get("/urls", (req, res) => {
   res.render("urls_index", templateVars);
 });
 
-//get new urls page
+//get new urls page (reidirect to log-in page if not logged in)
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    return res.redirect("/login");
+  }
   const templateVars = { user: users[req.cookies["user_id"]] };
   res.render("urls_new", templateVars);
 });
@@ -90,7 +93,7 @@ app.get("/login", (req, res) => {
 app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
-    longURL: urlDatabase[req.params.shortURL],
+    longURL: urlDatabase[req.params.shortURL].longURL,
     user: users[req.cookies["user_id"]],
   };
   res.render("urls_show", templateVars);
@@ -98,7 +101,7 @@ app.get("/urls/:shortURL", (req, res) => {
 
 //get shortURL link
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL];
+  const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
 
@@ -107,12 +110,12 @@ app.get("/u/:shortURL", (req, res) => {
 app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {
     return res.status(400).send("Please fill out all required fields");
-  } 
+  }
   if (checkUserEmail(req.body.email, users) !== false) {
     return res
       .status(400)
       .send("Email already registered, please login or use a different email");
-  } 
+  }
   if (res.statusCode !== 400) {
     const userId = generateRandomString();
     users[userId] = {
@@ -150,7 +153,6 @@ app.post("/login", (req, res) => {
   ) {
     res.status(403).send("Incorrect password please try again");
   }
-  
 });
 
 //logout of app
@@ -163,7 +165,8 @@ app.post("/logout", (req, res) => {
 app.post("/urls", (req, res) => {
   let newShortURL = generateRandomString();
   let newLongURL = req.body.longURL;
-  urlDatabase[newShortURL] = newLongURL;
+  let userID = req.cookies["user_id"];
+  urlDatabase[newShortURL] = { longURL: newLongURL, userID: userID.id };
   res.redirect("/urls/" + newShortURL);
 });
 
