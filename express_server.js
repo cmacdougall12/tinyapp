@@ -1,19 +1,39 @@
-//import dependancies 
+//import, set and use dependancies
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const { json } = require("body-parser");
+
+//set the view engine to ejs
+app.set("view engine", "ejs");
+
+//middlewear
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+//CONSTANT VARIABLES****************************************************************
+
 const PORT = 8080;
 
 //delcare urlDatabase as a global variable so entire application can access values
-const urlDatabase = {
-  b2xVn2: "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com",
+const urlDatabase = {};
+
+//store an create new users using object
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
 };
 
-//set username to global variable so it is available throughout application
-let = username = "";
+//FUNCTIONS*************************************************************************
 
 //generate random alphanumeric string of length 6. This is used when creating a new shortURL
 const generateRandomString = function () {
@@ -22,23 +42,49 @@ const generateRandomString = function () {
   return result;
 };
 
-//set the view engine to ejs
-app.set("view engine", "ejs");
+//check registered users email to avoid duplicate accounts
+const checkUserEmail = function (email, userObject) {
+  for (user in userObject) {
+    if (email === users[user].email) {
+      return user;
+    }
+  }
+  return false;
+};
 
-//middlewear used
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
-
-// get requests
+//GET REQUESTS**********************************************************************
+// get urls page
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, username: username };
+ 
+  const templateVars = {
+    urls: urlDatabase,
+    user: req.cookies["user_id"],
+  };
   res.render("urls_index", templateVars);
 });
 
-//get new url page
+//get new urls page
 app.get("/urls/new", (req, res) => {
-  const templateVars = {username: username };
+  const templateVars = { user: users[req.cookies["user_id"]] };
   res.render("urls_new", templateVars);
+});
+
+//get register page
+app.get("/register", (req, res) => {
+  const templateVars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("urls_register", templateVars);
+});
+
+//get login page
+app.get("/login", (req, res) => {
+  const templateVars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("urls_login", templateVars);
 });
 
 //get shortURL application page
@@ -46,28 +92,63 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL],
-    username: username
+    user: users[req.cookies["user_id"]],
   };
   res.render("urls_show", templateVars);
 });
 
-//get shortURL link 
+//get shortURL link
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL];
   res.redirect(longURL);
 });
 
+//POST REQUESTS*********************************************************************
+//register new user
+app.post("/register", (req, res) => {
+  if (req.body.email === "" || req.body.password === "") {
+    res.status(400).send("Please fill out all required fields");
+  } else if (checkUserEmail(req.body.email, users) !== false) {
+    res
+      .status(400)
+      .send("Email already registered, please login or use a different email");
+  } else if (res.statusCode !== 400) {
+    const userId = generateRandomString();
+    users[userId] = {
+      id: userId,
+      email: req.body.email,
+      password: req.body.password,
+    };
+    res.cookie("user_id", users[userId]["id"]);
+    res.redirect("/urls");
+  }
+});
+
 //login to app
 app.post("/login", (req, res) => {
-  username = req.body.username;
-  res.cookie("username", username);
-  res.redirect("/urls");
+  const currentUser = checkUserEmail(req.body.email, users);
+  //blank fields
+  if (req.body.email === "" || req.body.password === "") {
+    res.status(400).send("Please fill out all required fields");
+  }
+  //check user object for email given and see if passwords match
+  else if (currentUser === false) {
+    res
+      .status(403)
+      .send("User does not exist with email given, please create an account");
+  } else if (
+    currentUser !== false &&
+    users[currentUser].password === req.body.password
+  ) {
+    res.cookie("user_id", users[currentUser]).redirect("/urls");
+  } else {
+    res.status(403).send("Incorrect password please try again");
+  }
 });
 
 //logout of app
 app.post("/logout", (req, res) => {
-  username = "";
-  res.cookie("username", username);
+  res.cookie("user_id", "");
   res.redirect("/urls");
 });
 
