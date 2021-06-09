@@ -1,19 +1,39 @@
-//import dependancies
+//import, set and use dependancies
 const express = require("express");
 const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const { json } = require("body-parser");
+
+//set the view engine to ejs
+app.set("view engine", "ejs");
+
+//middlewear
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+//CONSTANT VARIABLES****************************************************************
+
 const PORT = 8080;
 
 //delcare urlDatabase as a global variable so entire application can access values
 const urlDatabase = {};
 
 //store an create new users using object
-const users = {};
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  user2RandomID: {
+    id: "user2RandomID",
+    email: "user2@example.com",
+    password: "dishwasher-funk",
+  },
+};
 
-//set username to global variable so it is available throughout application
-let username = "";
+//FUNCTIONS*************************************************************************
 
 //generate random alphanumeric string of length 6. This is used when creating a new shortURL
 const generateRandomString = function () {
@@ -25,23 +45,20 @@ const generateRandomString = function () {
 //check registered users email to avoid duplicate accounts
 const checkUserEmail = function (email, userObject) {
   for (user in userObject) {
-    if (email === user.email) return false;
-    return true;
+    if (email === users[user].email) {
+      return user;
+    }
   }
+  return false;
 };
 
-//set the view engine to ejs
-app.set("view engine", "ejs");
-
-//middlewear
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
-
+//GET REQUESTS**********************************************************************
 // get urls page
 app.get("/urls", (req, res) => {
+ 
   const templateVars = {
     urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
+    user: req.cookies["user_id"],
   };
   res.render("urls_index", templateVars);
 });
@@ -58,8 +75,16 @@ app.get("/register", (req, res) => {
     urls: urlDatabase,
     user: users[req.cookies["user_id"]],
   };
-  console.log(users);
   res.render("urls_register", templateVars);
+});
+
+//get login page
+app.get("/login", (req, res) => {
+  const templateVars = {
+    urls: urlDatabase,
+    user: users[req.cookies["user_id"]],
+  };
+  res.render("urls_login", templateVars);
 });
 
 //get shortURL application page
@@ -78,18 +103,16 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
+//POST REQUESTS*********************************************************************
 //register new user
 app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {
     res.status(400).send("Please fill out all required fields");
-  }
-  if (checkUserEmail(req.body.email, users) === true) {
+  } else if (checkUserEmail(req.body.email, users) !== false) {
     res
       .status(400)
       .send("Email already registered, please login or use a different email");
-  }
-
-  if (res.statusCode !== 400) {
+  } else if (res.statusCode !== 400) {
     const userId = generateRandomString();
     users[userId] = {
       id: userId,
@@ -103,15 +126,29 @@ app.post("/register", (req, res) => {
 
 //login to app
 app.post("/login", (req, res) => {
-  username = req.body.username;
-  res.cookie("username", username);
-  res.redirect("/urls");
+  const currentUser = checkUserEmail(req.body.email, users);
+  //blank fields
+  if (req.body.email === "" || req.body.password === "") {
+    res.status(400).send("Please fill out all required fields");
+  }
+  //check user object for email given and see if passwords match
+  else if (currentUser === false) {
+    res
+      .status(403)
+      .send("User does not exist with email given, please create an account");
+  } else if (
+    currentUser !== false &&
+    users[currentUser].password === req.body.password
+  ) {
+    res.cookie("user_id", users[currentUser]).redirect("/urls");
+  } else {
+    res.status(403).send("Incorrect password please try again");
+  }
 });
 
 //logout of app
 app.post("/logout", (req, res) => {
-  username = "";
-  res.cookie("username", username);
+  res.cookie("user_id", "");
   res.redirect("/urls");
 });
 
