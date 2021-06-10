@@ -4,6 +4,7 @@ const app = express();
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const { json } = require("body-parser");
+const bcrypt = require("bcrypt");
 
 //set the view engine to ejs
 app.set("view engine", "ejs");
@@ -20,18 +21,7 @@ const PORT = 8080;
 const urlDatabase = {};
 
 //store an create new users using object
-const users = {
-  userRandomID: {
-    id: "userRandomID",
-    email: "user@example.com",
-    password: "123",
-  },
-  user2RandomID: {
-    id: "user2RandomID",
-    email: "user2@example.com",
-    password: "123",
-  },
-};
+const users = {};
 
 //FUNCTIONS*************************************************************************
 
@@ -62,7 +52,6 @@ const urlsForUser = function (id) {
   }
   return userURLS;
 };
-
 
 //GET REQUESTS**********************************************************************
 // get urls page
@@ -131,7 +120,7 @@ app.post("/register", (req, res) => {
     users[userId] = {
       id: userId,
       email: req.body.email,
-      password: req.body.password,
+      password: bcrypt.hashSync(req.body.password, 10),
     };
     res.cookie("user_id", users[userId]);
     res.redirect("/urls");
@@ -153,13 +142,13 @@ app.post("/login", (req, res) => {
   }
   if (
     currentUser !== false &&
-    users[currentUser].password === req.body.password
+    bcrypt.compareSync(req.body.password, users[currentUser].password)
   ) {
     return res.cookie("user_id", users[currentUser]).redirect("/urls");
   }
   if (
     currentUser !== false &&
-    users[currentUser].password !== req.body.password
+    bcrypt.compareSync(req.body.password, users[currentUser].password)
   ) {
     res.status(403).send("Incorrect password please try again");
   }
@@ -204,7 +193,7 @@ app.post("/urls/:shortURL/update", (req, res) => {
       .status(403)
       .send("Can not modify messages, without logging into account");
   }
-   //user modifying link needs to be the one who made the link
+  //user modifying link needs to be the one who made the link
   let newLongURL = req.body.newLongURL;
   let userID = req.cookies["user_id"];
   if (userID["id"] === urlDatabase[req.params.shortURL]["userID"]) {
