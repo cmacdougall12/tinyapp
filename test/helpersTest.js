@@ -51,10 +51,19 @@ const urlDatabase = {
 
 describe("urlsForUser", function () {
   it("should return object with only links belonging to userID:aJ48lW ", function () {
-    const urlsFiltered = urlsForUser("aJ48lW",urlDatabase);
-    const expected = {
-      b6UTxQ: "https://www.tsn.ca"
-    };
-    assert.strictEqual(urlsFiltered, expected);
+    const urlsFiltered = urlsForUser("aJ48lW",urlDatabase)["b6UTxQ"];
+    const expected ="https://www.tsn.ca"
+  
+    assert.equal(urlsFiltered, expected);
   });
+
+  it("should return empty object as no user matching exists. No links associated to user so result should be undefined", function () {
+    const urlsFiltered = urlsForUser("aJ4dsdsd",urlDatabase)["b6UTxQ"];
+    const expected = undefined
+  
+    assert.equal(urlsFiltered, expected);
+  });
+
+
+  
 });
