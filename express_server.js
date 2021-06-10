@@ -1,8 +1,7 @@
 //import, set and use dependancies
 const express = require("express");
 const app = express();
-const bodyParser = require("body-parser");
-const cookieParser = require("cookie-parser");
+const cookieSession = require("cookie-session");
 const { json } = require("body-parser");
 const bcrypt = require("bcrypt");
 
@@ -10,8 +9,17 @@ const bcrypt = require("bcrypt");
 app.set("view engine", "ejs");
 
 //middlewear
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cookieParser());
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
+app.use(
+  cookieSession({
+    name: "session",
+    secret: "secret",
+  })
+);
 
 //CONSTANT VARIABLES****************************************************************
 
@@ -57,11 +65,11 @@ const urlsForUser = function (id) {
 // get urls page
 app.get("/urls", (req, res) => {
   const templateVars = {
-    user: req.cookies["user_id"],
+    user: req.session.user_id,
   };
 
-  if (req.cookies["user_id"]) {
-    templateVars["urls"] = urlsForUser(req.cookies["user_id"].id);
+  if (req.session.user_id) {
+    templateVars["urls"] = urlsForUser(req.session.user_id.id);
   }
 
   res.render("urls_index", templateVars);
@@ -69,10 +77,10 @@ app.get("/urls", (req, res) => {
 
 //get new urls page (reidirect to log-in page if not logged in)
 app.get("/urls/new", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     return res.redirect("/login");
   }
-  const templateVars = { user: req.cookies["user_id"] };
+  const templateVars = { user: req.session.user_id };
   res.render("urls_new", templateVars);
 });
 
@@ -80,7 +88,7 @@ app.get("/urls/new", (req, res) => {
 app.get("/register", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    user: req.cookies["user_id"],
+    user: req.session.user_id,
   };
   res.render("urls_register", templateVars);
 });
@@ -89,7 +97,7 @@ app.get("/register", (req, res) => {
 app.get("/login", (req, res) => {
   const templateVars = {
     urls: urlDatabase,
-    user: users[req.cookies["user_id"]],
+    user: users[req.session.user_id],
   };
   res.render("urls_login", templateVars);
 });
@@ -99,7 +107,7 @@ app.get("/urls/:shortURL", (req, res) => {
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
-    user: req.cookies["user_id"],
+    user: req.session.user_id,
   };
   res.render("urls_show", templateVars);
 });
@@ -122,7 +130,7 @@ app.post("/register", (req, res) => {
       email: req.body.email,
       password: bcrypt.hashSync(req.body.password, 10),
     };
-    res.cookie("user_id", users[userId]);
+    req.session.user_id = users[userId];
     res.redirect("/urls");
   }
 });
@@ -144,7 +152,8 @@ app.post("/login", (req, res) => {
     currentUser !== false &&
     bcrypt.compareSync(req.body.password, users[currentUser].password)
   ) {
-    return res.cookie("user_id", users[currentUser]).redirect("/urls");
+    req.session.user_id = users[currentUser];
+    return res.redirect("/urls");
   }
   if (
     currentUser !== false &&
@@ -156,7 +165,7 @@ app.post("/login", (req, res) => {
 
 //logout of app
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session.user_id = null;
   res.redirect("/urls");
 });
 
@@ -164,7 +173,7 @@ app.post("/logout", (req, res) => {
 app.post("/urls", (req, res) => {
   let newShortURL = generateRandomString();
   let newLongURL = req.body.longURL;
-  let userID = req.cookies["user_id"];
+  let userID = req.session.user_id;
   urlDatabase[newShortURL] = { longURL: newLongURL, userID: userID.id };
   res.redirect("/urls/" + newShortURL);
 });
@@ -172,13 +181,13 @@ app.post("/urls", (req, res) => {
 //delete an existing url
 app.post("/urls/:shortURL/delete", (req, res) => {
   //users not logged in can not delete links
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     return res
       .status(403)
       .send("Can not delete links, without logging into account");
   }
   //user deleting link needs to be the one who made the link
-  let userID = req.cookies["user_id"];
+  let userID = req.session.user_id;
   if (userID["id"] === urlDatabase[req.params.shortURL]["userID"]) {
     delete urlDatabase[req.params.shortURL];
     return res.redirect("/urls");
@@ -188,14 +197,14 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 //modify an existing url
 app.post("/urls/:shortURL/update", (req, res) => {
   //users not logged in can not modify links
-  if (!req.cookies["user_id"]) {
+  if (!req.session.user_id) {
     return res
       .status(403)
       .send("Can not modify messages, without logging into account");
   }
   //user modifying link needs to be the one who made the link
   let newLongURL = req.body.newLongURL;
-  let userID = req.cookies["user_id"];
+  let userID = req.session.user_id;
   if (userID["id"] === urlDatabase[req.params.shortURL]["userID"]) {
     urlDatabase[req.params.shortURL]["longURL"] = newLongURL;
     return res.redirect("/urls");
