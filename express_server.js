@@ -1,4 +1,4 @@
-//import, set and use dependancies
+//IMPORT, SET and USE****************************************************
 const express = require("express");
 const app = express();
 const cookieSession = require("cookie-session");
@@ -21,7 +21,14 @@ app.use(
   })
 );
 
-//CONSTANT VARIABLES****************************************************************
+//HELPER FUNCTIONS*******************************************************
+const {
+  checkUserEmail,
+  urlsForUser,
+  generateRandomString,
+} = require("./helpers");
+
+//CONSTANT VARIABLES*****************************************************
 
 const PORT = 8080;
 
@@ -31,37 +38,7 @@ const urlDatabase = {};
 //store an create new users using object
 const users = {};
 
-//FUNCTIONS*************************************************************************
-
-//generate random alphanumeric string of length 6. This is used when creating a new shortURL
-const generateRandomString = function () {
-  let result = "";
-  result = Math.random().toString(36).substr(2, 6);
-  return result;
-};
-
-//check registered users email to avoid duplicate accounts
-const checkUserEmail = function (email, userObject) {
-  for (user in userObject) {
-    if (email === users[user].email) {
-      return user;
-    }
-  }
-  return false;
-};
-
-//returns URLs that belongs to the user logged in
-const urlsForUser = function (id) {
-  const userURLS = {};
-  for (let urls in urlDatabase) {
-    if (urlDatabase[urls]["userID"] === id) {
-      userURLS[urls] = urlDatabase[urls]["longURL"];
-    }
-  }
-  return userURLS;
-};
-
-//GET REQUESTS**********************************************************************
+//GET REQUESTS***********************************************************
 // get urls page
 app.get("/urls", (req, res) => {
   const templateVars = {
@@ -69,7 +46,7 @@ app.get("/urls", (req, res) => {
   };
 
   if (req.session.user_id) {
-    templateVars["urls"] = urlsForUser(req.session.user_id.id);
+    templateVars["urls"] = urlsForUser(req.session.user_id.id, urlDatabase);
   }
 
   res.render("urls_index", templateVars);
@@ -112,13 +89,13 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-//POST REQUESTS*********************************************************************
+//POST REQUESTS**********************************************************
 //register new user
 app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {
     return res.status(400).send("Please fill out all required fields");
   }
-  if (checkUserEmail(req.body.email, users) !== false) {
+  if (checkUserEmail(req.body.email, users) !== undefined) {
     return res
       .status(400)
       .send("Email already registered, please login or use a different email");
@@ -143,20 +120,20 @@ app.post("/login", (req, res) => {
     return res.status(400).send("Please fill out all required fields");
   }
   //check user object for email given and see if passwords match
-  if (currentUser === false) {
+  if (currentUser === undefined) {
     return res
       .status(403)
       .send("User does not exist with email given, please create an account");
   }
   if (
-    currentUser !== false &&
+    currentUser !== undefined &&
     bcrypt.compareSync(req.body.password, users[currentUser].password)
   ) {
     req.session.user_id = users[currentUser];
     return res.redirect("/urls");
   }
   if (
-    currentUser !== false &&
+    currentUser !== undefined &&
     bcrypt.compareSync(req.body.password, users[currentUser].password)
   ) {
     res.status(403).send("Incorrect password please try again");
