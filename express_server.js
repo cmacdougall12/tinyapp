@@ -42,14 +42,13 @@ const users = {};
 //GET REQUESTS***********************************************************
 
 //get / page
-app.get("/", (req,res)=>{
+app.get("/", (req, res) => {
   //redirect to urls page if logged in, login page if not
   if (!req.session.user_id) {
-    return res
-      .redirect("login")
+    return res.redirect("login");
   }
   res.redirect("/urls");
-})
+});
 // get urls page
 app.get("/urls", (req, res) => {
   const templateVars = {
@@ -88,7 +87,7 @@ app.get("/register", (req, res) => {
 //get login page
 app.get("/login", (req, res) => {
   if (req.session.user_id) {
-    return res.redirect("/urls")
+    return res.redirect("/urls");
   }
   const templateVars = {
     urls: urlDatabase,
@@ -100,13 +99,24 @@ app.get("/login", (req, res) => {
 //get shortURL application page
 app.get("/urls/:shortURL", (req, res) => {
   //check to see if link exists
-  if (!urlDatabase[req.params.shortURL]){
-    return res.status(403).send(`The short URL ${req.params.shortURL} does not exist. Please ensure correct short URL was entered.`)
+  if (!urlDatabase[req.params.shortURL]) {
+    return res
+      .status(403)
+      .send(
+        `The short URL ${req.params.shortURL} does not exist. Please ensure correct short URL was entered.`
+      );
   }
   //check to see if user owns link and is logged in
-  let userID = req.session.user_id
-  if(!req.session.user_id || userID["id"] !== urlDatabase[req.params.shortURL]["userID"]){
-    return res.status(403).send(`The short URL ${req.params.shortURL} is owned by another user. Please ensure correct short URL was entered and you are logged in as the correct user.`)
+  let userID = req.session.user_id;
+  if (
+    !req.session.user_id ||
+    userID["id"] !== urlDatabase[req.params.shortURL]["userID"]
+  ) {
+    return res
+      .status(403)
+      .send(
+        `The short URL ${req.params.shortURL} is owned by another user. Please ensure correct short URL was entered and you are logged in as the correct user.`
+      );
   }
 
   const templateVars = {
@@ -115,6 +125,14 @@ app.get("/urls/:shortURL", (req, res) => {
     user: req.session.user_id,
   };
   res.render("urls_show", templateVars);
+});
+
+//get /urls/:shortURL
+app.get("/u/:shortURL", (req, res) => {
+  if (!urlDatabase[req.params.shortURL]){
+     return res.status(403).send('Something went wrong with the Long URL corresponding to the short URL given. Please confirm long URL is entered correctly.')
+  }
+  res.redirect(urlDatabase[req.params.shortURL].longURL)
 });
 
 //POST REQUESTS**********************************************************
@@ -205,7 +223,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 //modify an existing url
-app.post("/urls/:shortURL/update", (req, res) => {
+app.post("/urls/:shortURL", (req, res) => {
   //users not logged in can not modify links
   if (!req.session.user_id) {
     return res
