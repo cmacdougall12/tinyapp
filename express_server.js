@@ -17,6 +17,7 @@ app.use(
 app.use(
   cookieSession({
     name: "session",
+    keys: ["key1", "key2"],
     secret: "secret",
   })
 );
@@ -39,6 +40,16 @@ const urlDatabase = {};
 const users = {};
 
 //GET REQUESTS***********************************************************
+
+//get / page
+app.get("/", (req,res)=>{
+  //redirect to urls page if logged in, login page if not
+  if (!req.session.user_id) {
+    return res
+      .redirect("login")
+  }
+  res.redirect("/urls");
+})
 // get urls page
 app.get("/urls", (req, res) => {
   const templateVars = {
@@ -63,6 +74,10 @@ app.get("/urls/new", (req, res) => {
 
 //get register page
 app.get("/register", (req, res) => {
+  //redirect to urls page if already logged in as a user
+  if (req.session.user_id) {
+    return res.redirect("/urls");
+  }
   const templateVars = {
     urls: urlDatabase,
     user: req.session.user_id,
@@ -72,6 +87,9 @@ app.get("/register", (req, res) => {
 
 //get login page
 app.get("/login", (req, res) => {
+  if (req.session.user_id) {
+    return res.redirect("/urls")
+  }
   const templateVars = {
     urls: urlDatabase,
     user: users[req.session.user_id],
@@ -81,6 +99,16 @@ app.get("/login", (req, res) => {
 
 //get shortURL application page
 app.get("/urls/:shortURL", (req, res) => {
+  //check to see if link exists
+  if (!urlDatabase[req.params.shortURL]){
+    return res.status(403).send(`The short URL ${req.params.shortURL} does not exist. Please ensure correct short URL was entered.`)
+  }
+  //check to see if user owns link and is logged in
+  let userID = req.session.user_id
+  if(!req.session.user_id || userID["id"] !== urlDatabase[req.params.shortURL]["userID"]){
+    return res.status(403).send(`The short URL ${req.params.shortURL} is owned by another user. Please ensure correct short URL was entered and you are logged in as the correct user.`)
+  }
+
   const templateVars = {
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL,
@@ -134,7 +162,7 @@ app.post("/login", (req, res) => {
   }
   if (
     currentUser !== undefined &&
-    bcrypt.compareSync(req.body.password, users[currentUser].password)
+    !bcrypt.compareSync(req.body.password, users[currentUser].password)
   ) {
     res.status(403).send("Incorrect password please try again");
   }
@@ -148,6 +176,11 @@ app.post("/logout", (req, res) => {
 
 //add a new url
 app.post("/urls", (req, res) => {
+  if (!req.session.user_id) {
+    return res
+      .status(403)
+      .send("Can not create links, without logging into account");
+  }
   let newShortURL = generateRandomString();
   let newLongURL = req.body.longURL;
   let userID = req.session.user_id;
