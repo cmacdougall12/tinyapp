@@ -31,6 +31,7 @@
           </tr>
         </thead>
         <tbody>
+           <!-- loop through urls object and display in table. -->
           <% if (user){%> <% for(let url in urls) { %>
           <tr>
             <td><a href="/u/<%=url%>"><%= url %></a></td>
@@ -49,6 +50,7 @@
           <% } %> <%}%>
         </tbody>
       </table>
+       <!-- only users logged in can see links, otherwise display message below  -->
       <% if (!user){%>
         <h3>Please login to view your links!!</h3>
       <%}%>
